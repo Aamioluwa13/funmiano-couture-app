@@ -1,6 +1,17 @@
-<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-  <!-- Flame/Leaf Logo -->
-  <path d="M 100 20 Q 130 50 130 90 Q 130 140 100 160 Q 70 140 70 90 Q 70 50 100 20 Z" fill="none" stroke="black" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
-  <path d="M 100 30 Q 120 55 120 90 Q 120 135 100 150 Q 80 135 80 90 Q 80 55 100 30 Z" fill="none" stroke="black" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
-  <path d="M 100 40 Q 115 60 115 90 Q 115 130 100 145 Q 85 130 85 90 Q 85 60 100 40 Z" fill="none" stroke="black" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+<svg viewBox="0 0 200 240" xmlns="http://www.w3.org/2000/svg">
+  <!-- Funmiano Couture Flame/Leaf Logo -->
+  <defs>
+    <style>
+      .flame-curve { fill: none; stroke: #000; stroke-width: 12; stroke-linecap: round; stroke-linejoin: round; }
+    </style>
+  </defs>
+  
+  <!-- Outer flame curve -->
+  <path class="flame-curve" d="M 60 200 Q 50 150 70 100 Q 85 60 100 30 Q 115 60 130 100 Q 150 150 140 200"/>
+  
+  <!-- Middle flame curve -->
+  <path class="flame-curve" d="M 75 195 Q 68 155 82 110 Q 93 75 100 45 Q 107 75 118 110 Q 132 155 125 195"/>
+  
+  <!-- Inner flame curve -->
+  <path class="flame-curve" d="M 90 190 Q 85 160 95 120 Q 102 90 100 60 Q 98 90 105 120 Q 115 160 110 190"/>
 </svg>
