@@ -24,7 +24,10 @@ export default function AddProduct() {
   ]);
 
   const [isLoading, setIsLoading] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState('');
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
   const router = useRouter();
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -40,9 +43,75 @@ export default function AddProduct() {
     newVariants[index] = { ...newVariants[index], [field]: value };
     setVariants(newVariants);
   };
-
   const addVariant = () => {
     setVariants([...variants, { size: 'M', color: '', stock: '' }]);
+  };
+
+  const handleImageUpload = async (file: File) => {
+    if (!file) return;
+
+    setIsUploading(true);
+    setError('');
+
+    try {
+      // Create preview
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        if (e.target?.result) {
+          setImagePreview(e.target.result as string);
+        }
+      };
+      reader.readAsDataURL(file);
+
+      // Upload file
+      const uploadFormData = new FormData();
+      uploadFormData.append('file', file);
+
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        body: uploadFormData,
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Upload failed');
+      }
+
+      const data = await response.json();
+      setFormData((prev) => ({
+        ...prev,
+        image: data.path,
+      }));
+    } catch {
+      setError('Failed to upload image. Please try again.');
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      handleImageUpload(file);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = () => {
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) {
+      handleImageUpload(file);
+    }
   };
 
   const removeVariant = (index: number) => {
@@ -276,18 +345,83 @@ export default function AddProduct() {
           {/* Image */}
           <div className="bg-white rounded-lg shadow p-6 space-y-4">
             <h2 className="text-xl font-bold text-gray-900 mb-4">Product Image</h2>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Image URL</label>
-              <input
-                type="text"
-                name="image"
-                value={formData.image}
-                onChange={handleInputChange}
-                placeholder="/products/joggers-black.jpg"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-              />
-              <p className="text-xs text-gray-500 mt-2">💡 Upload images to public/products folder and reference the path here</p>
+            
+            {/* Drag and Drop Area */}
+            <div
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+              className={`border-2 border-dashed rounded-lg p-8 text-center transition ${
+                isDragging
+                  ? 'border-blue-500 bg-blue-50'
+                  : formData.image
+                  ? 'border-green-300 bg-green-50'
+                  : 'border-gray-300 bg-gray-50'
+              }`}
+            >
+              <div className="space-y-3">
+                <div className="text-3xl">
+                  {formData.image ? '✅' : '📁'}
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-gray-700">
+                    {isUploading ? '⏳ Uploading...' : formData.image ? '✓ Image uploaded!' : 'Drag & drop your image here'}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">or</p>
+                </div>
+                <label>
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    onChange={handleFileChange}
+                    disabled={isUploading}
+                    className="hidden"
+                  />
+                  <button
+                    type="button"
+                    disabled={isUploading}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      (e.currentTarget.parentElement?.querySelector('input') as HTMLInputElement)?.click();
+                    }}
+                    className="text-blue-600 hover:text-blue-900 font-semibold disabled:text-gray-400 text-sm"
+                  >
+                    Click to browse
+                  </button>
+                </label>
+                <p className="text-xs text-gray-400 mt-2">JPG, PNG, or WebP • Max 5MB</p>
+              </div>
             </div>
+
+            {/* Image Preview */}
+            {(imagePreview || formData.image) && (
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700">Preview</label>
+                <div className="relative w-full h-48 bg-gray-100 rounded-lg overflow-hidden flex items-center justify-center">
+                  <div
+                    style={{
+                      backgroundImage: `url('${imagePreview || formData.image}')`,
+                      backgroundSize: 'contain',
+                      backgroundRepeat: 'no-repeat',
+                      backgroundPosition: 'center',
+                      width: '100%',
+                      height: '100%',
+                    }}
+                    className="flex items-center justify-center"
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFormData({ ...formData, image: '' });
+                    setImagePreview(null);
+                  }}
+                  className="text-red-600 hover:text-red-900 text-sm font-medium"
+                >
+                  ✕ Remove image
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Submit */}
