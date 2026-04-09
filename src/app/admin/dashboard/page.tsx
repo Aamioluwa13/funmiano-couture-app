@@ -3,11 +3,13 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { PRODUCTS } from '@/constants/products';
 import { Product } from '@/types';
+import { productAPI } from '@/lib/productAPI';
 
 export default function AdminDashboard() {
-  const [products, setProducts] = useState<Product[]>(PRODUCTS);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState('');
   const router = useRouter();
 
   useEffect(() => {
@@ -15,18 +17,39 @@ export default function AdminDashboard() {
     const isAuth = localStorage.getItem('adminAuth') === 'true';
     if (!isAuth) {
       router.push('/admin');
+      return;
     }
+
+    // Load products from API
+    loadProducts();
   }, [router]);
+
+  const loadProducts = async () => {
+    try {
+      setIsLoading(true);
+      const data = await productAPI.getAll();
+      setProducts(data);
+      setError('');
+    } catch {
+      setError('Failed to load products');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleLogout = () => {
     localStorage.removeItem('adminAuth');
     router.push('/admin');
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     if (confirm('Are you sure you want to delete this product?')) {
-      setProducts(products.filter(p => p.id !== id));
-      // TODO: In a real app, this would update the database
+      try {
+        await productAPI.delete(id);
+        setProducts(products.filter(p => p.id !== id));
+      } catch {
+        setError('Failed to delete product');
+      }
     }
   };
 
@@ -58,6 +81,15 @@ export default function AdminDashboard() {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {error && (
+          <div className="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+            {error}
+          </div>
+        )}
+        {isLoading ? (
+          <div className="text-center text-gray-600">Loading products...</div>
+        ) : (
+          <>
         {/* Stats */}
         <div className="grid grid-cols-3 gap-4 mb-8">
           <div className="bg-white p-6 rounded-lg shadow">
@@ -139,6 +171,8 @@ export default function AdminDashboard() {
             </table>
           </div>
         </div>
+          </>
+        )}
       </main>
     </div>
   );

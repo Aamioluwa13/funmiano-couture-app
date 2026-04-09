@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { productAPI } from '@/lib/productAPI';
 
 const CATEGORIES = ['joggers', 'sweatshirts', 'kids-dresses', 'adult-dresses'];
 const SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
@@ -22,6 +23,8 @@ export default function AddProduct() {
     { size: 'M', color: '', stock: '' },
   ]);
 
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
   const router = useRouter();
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -46,18 +49,47 @@ export default function AddProduct() {
     setVariants(variants.filter((_, i) => i !== index));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError('');
     
     // Validate form
     if (!formData.name || !formData.description || !formData.price || !formData.category) {
-      alert('Please fill in all required fields');
+      setError('Please fill in all required fields');
       return;
     }
 
-    // TODO: In a real app, this would save to database/file
-    alert('Product added! (This would be saved to your database in a production app)');
-    router.push('/admin/dashboard');
+    if (variants.some(v => !v.size || !v.color || !v.stock)) {
+      setError('Please fill in all variant fields');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      await productAPI.create({
+        name: formData.name,
+        description: formData.description,
+        price: parseFloat(formData.price),
+        originalPrice: formData.originalPrice ? parseFloat(formData.originalPrice) : undefined,
+        category: formData.category as 'joggers' | 'sweatshirts' | 'kids-dresses' | 'adult-dresses',
+        image: formData.image,
+        images: [formData.image],
+        variants: variants.map(v => ({
+          size: v.size,
+          color: v.color,
+          stock: parseInt(v.stock),
+        })),
+        featured: formData.featured,
+        rating: 5.0,
+        reviews: 0,
+      });
+
+      router.push('/admin/dashboard');
+    } catch {
+      setError('Failed to add product. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -76,6 +108,11 @@ export default function AddProduct() {
 
       {/* Main Content */}
       <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {error && (
+          <div className="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+            {error}
+          </div>
+        )}
         <form onSubmit={handleSubmit} className="space-y-8">
           {/* Basic Information */}
           <div className="bg-white rounded-lg shadow p-6 space-y-4">
@@ -257,9 +294,10 @@ export default function AddProduct() {
           <div className="flex gap-4">
             <button
               type="submit"
-              className="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-4 rounded-lg transition"
+              disabled={isLoading}
+              className="flex-1 bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white font-semibold py-3 px-4 rounded-lg transition"
             >
-              ✓ Add Product
+              {isLoading ? '⏳ Adding...' : '✓ Add Product'}
             </button>
             <Link
               href="/admin/dashboard"
