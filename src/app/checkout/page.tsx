@@ -314,7 +314,7 @@ export default function CheckoutPage() {
                       const value = e.target.value.replace(/\s/g, '').replace(/(\d{4})/g, '$1 ').trim();
                       setFormData({ ...formData, cardNumber: value });
                     }}
-                    maxLength="19"
+                    maxLength={19}
                     className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600 font-mono ${
                       errors.cardNumber ? 'border-red-600' : 'border-gray-300'
                     }`}
@@ -338,7 +338,7 @@ export default function CheckoutPage() {
                         }
                         setFormData({ ...formData, expiry: value });
                       }}
-                      maxLength="5"
+                      maxLength={5}
                       className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600 font-mono ${
                         errors.expiry ? 'border-red-600' : 'border-gray-300'
                       }`}
@@ -356,7 +356,7 @@ export default function CheckoutPage() {
                         const value = e.target.value.replace(/\D/g, '').slice(0, 3);
                         setFormData({ ...formData, cvc: value });
                       }}
-                      maxLength="3"
+                      maxLength={3}
                       className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600 font-mono ${
                         errors.cvc ? 'border-red-600' : 'border-gray-300'
                       }`}
