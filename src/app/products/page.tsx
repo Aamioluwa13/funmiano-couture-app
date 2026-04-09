@@ -1,21 +1,39 @@
 'use client';
 
-import { useState, Suspense } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { ProductCard } from '@/components/ProductCard';
-import { PRODUCTS } from '@/constants/products';
+import { Product } from '@/types';
 
 function ProductsContent() {
   const searchParams = useSearchParams();
   const category = searchParams.get('category');
   const [sortBy, setSortBy] = useState<'featured' | 'price-low' | 'price-high' | 'rating'>('featured');
+  const [products, setProducts] = useState<Product[]>([]);
 
-  let filteredProducts = PRODUCTS;
+  useEffect(() => {
+    // Load products from API
+    const loadProducts = async () => {
+      try {
+        const response = await fetch('/api/products');
+        if (response.ok) {
+          const data = await response.json();
+          setProducts(data);
+        }
+      } catch {
+        console.error('Failed to load products');
+      }
+    };
+
+    loadProducts();
+  }, []);
+
+  let filteredProducts = products;
 
   if (category && category !== 'featured') {
-    filteredProducts = PRODUCTS.filter(p => p.category === category);
+    filteredProducts = products.filter(p => p.category === category);
   } else if (category === 'featured') {
-    filteredProducts = PRODUCTS.filter(p => p.featured);
+    filteredProducts = products.filter(p => p.featured);
   }
 
   // Sort products
@@ -65,7 +83,7 @@ function ProductsContent() {
             </label>
             <select
               value={sortBy}
-              onChange={(e) => setSortBy(e.target.value as any)}
+              onChange={(e) => setSortBy(e.target.value as 'featured' | 'price-low' | 'price-high' | 'rating')}
               className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600"
             >
               <option value="featured">Featured</option>

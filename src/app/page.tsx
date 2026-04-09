@@ -1,12 +1,33 @@
 'use client';
 
 import Link from 'next/link';
+import { useState, useEffect } from 'react';
 import { ProductCard } from '@/components/ProductCard';
-import { PRODUCTS, CATEGORIES } from '@/constants/products';
+import { CATEGORIES } from '@/constants/products';
+import { Product } from '@/types';
 
 export default function Home() {
+  const [products, setProducts] = useState<Product[]>([]);
+
+  useEffect(() => {
+    // Load products from API
+    const loadProducts = async () => {
+      try {
+        const response = await fetch('/api/products');
+        if (response.ok) {
+          const data = await response.json();
+          setProducts(data);
+        }
+      } catch {
+        console.error('Failed to load products');
+      }
+    };
+
+    loadProducts();
+  }, []);
+
   // Get featured products
-  const featuredProducts = PRODUCTS.filter(p => p.featured).slice(0, 8);
+  const featuredProducts = products.filter(p => p.featured).slice(0, 8);
 
   return (
     <div className="bg-white">
