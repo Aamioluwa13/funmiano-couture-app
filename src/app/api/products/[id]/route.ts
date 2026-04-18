@@ -21,6 +21,24 @@ async function writeProducts(products: Product[]): Promise<void> {
   await fs.writeFile(productsFilePath, JSON.stringify(products, null, 2), 'utf-8');
 }
 
+// Helper to write products file with retry logic
+async function writeProductsWithRetry(products: Product[], retries = 3): Promise<void> {
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      await writeProducts(products);
+      console.log(`Products saved successfully on attempt ${attempt}`);
+      return;
+    } catch (error) {
+      console.error(`Attempt ${attempt} failed:`, error);
+      if (attempt < retries) {
+        await new Promise(resolve => setTimeout(resolve, 100 * attempt));
+      } else {
+        throw error;
+      }
+    }
+  }
+}
+
 // GET - Fetch single product by ID
 export async function GET(
   _request: NextRequest,
@@ -74,7 +92,7 @@ export async function PUT(
     };
 
     products[productIndex] = updatedProduct;
-    await writeProducts(products);
+    await writeProductsWithRetry(products);
 
     return NextResponse.json(updatedProduct);
   } catch {
@@ -104,7 +122,7 @@ export async function DELETE(
 
     // Remove product
     products.splice(productIndex, 1);
-    await writeProducts(products);
+    await writeProductsWithRetry(products);
 
     return NextResponse.json({ success: true });
   } catch {

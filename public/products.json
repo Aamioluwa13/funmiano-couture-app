@@ -466,7 +466,7 @@
         "stock": 100
       }
     ],
-    "featured": false,
+    "featured": true,
     "rating": 5,
     "reviews": 0,
     "createdAt": "2026-04-09T13:05:42.633Z"

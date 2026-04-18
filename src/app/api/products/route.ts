@@ -28,6 +28,25 @@ async function writeProducts(products: Product[]): Promise<void> {
   }
 }
 
+// Helper to write products file with retry logic
+async function writeProductsWithRetry(products: Product[], retries = 3): Promise<void> {
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      await writeProducts(products);
+      console.log(`Products saved successfully on attempt ${attempt}`);
+      return;
+    } catch (error) {
+      console.error(`Attempt ${attempt} failed:`, error);
+      if (attempt < retries) {
+        // Wait before retrying
+        await new Promise(resolve => setTimeout(resolve, 100 * attempt));
+      } else {
+        throw error;
+      }
+    }
+  }
+}
+
 // GET - Fetch all products
 export async function GET() {
   try {
@@ -46,6 +65,8 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
+    console.log('Received product data:', body);
+    
     const products = await readProducts();
 
     // Generate new ID
@@ -58,14 +79,17 @@ export async function POST(request: NextRequest) {
       createdAt: new Date().toISOString(),
     };
 
+    console.log('Creating new product:', newProduct);
     products.push(newProduct);
-    await writeProducts(products);
+    await writeProductsWithRetry(products);
+    console.log('Product saved successfully');
 
     return NextResponse.json(newProduct, { status: 201 });
-  } catch {
-    console.error('Error adding product');
+  } catch (error) {
+    console.error('Error adding product:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
-      { error: 'Failed to add product' },
+      { error: `Failed to add product: ${errorMessage}` },
       { status: 500 }
     );
   }

@@ -24,7 +24,11 @@ export const productAPI = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(product),
     });
-    if (!res.ok) throw new Error('Failed to create product');
+    if (!res.ok) {
+      const error = await res.text();
+      console.error('API Error:', error);
+      throw new Error(`Failed to create product: ${res.status} ${res.statusText}`);
+    }
     return res.json();
   },
 

@@ -16,7 +16,7 @@ export default function AddProduct() {
     originalPrice: '',
     category: 'joggers',
     image: '',
-    featured: false,
+    featured: true,
   });
 
   const [variants, setVariants] = useState([
@@ -67,23 +67,30 @@ export default function AddProduct() {
       const uploadFormData = new FormData();
       uploadFormData.append('file', file);
 
+      console.log('Uploading file:', { name: file.name, size: file.size, type: file.type });
+
       const response = await fetch('/api/upload', {
         method: 'POST',
         body: uploadFormData,
       });
 
+      console.log('Upload response status:', response.status);
+      const data = await response.json();
+      console.log('Upload response data:', data);
+
       if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || 'Upload failed');
+        throw new Error(data.error || `Upload failed with status ${response.status}`);
       }
 
-      const data = await response.json();
       setFormData((prev) => ({
         ...prev,
         image: data.path,
       }));
-    } catch {
-      setError('Failed to upload image. Please try again.');
+      console.log('Image uploaded successfully:', data.path);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to upload image';
+      console.error('Image upload error:', errorMessage);
+      setError(`Upload failed: ${errorMessage}`);
     } finally {
       setIsUploading(false);
     }
@@ -122,20 +129,30 @@ export default function AddProduct() {
     e.preventDefault();
     setError('');
     
+    console.log('Form submit started');
+    
     // Validate form
     if (!formData.name || !formData.description || !formData.price || !formData.category) {
       setError('Please fill in all required fields');
+      console.error('Validation failed: missing required fields');
       return;
     }
 
     if (variants.some(v => !v.size || !v.color || !v.stock)) {
       setError('Please fill in all variant fields');
+      console.error('Validation failed: missing variant fields');
+      return;
+    }
+
+    if (!formData.image) {
+      setError('Please upload an image');
+      console.error('Validation failed: no image');
       return;
     }
 
     setIsLoading(true);
     try {
-      await productAPI.create({
+      const productData = {
         name: formData.name,
         description: formData.description,
         price: parseFloat(formData.price),
@@ -151,11 +168,22 @@ export default function AddProduct() {
         featured: formData.featured,
         rating: 5.0,
         reviews: 0,
-      });
+      };
 
-      router.push('/admin/dashboard');
-    } catch {
-      setError('Failed to add product. Please try again.');
+      console.log('Submitting product:', productData);
+      
+      const result = await productAPI.create(productData);
+      console.log('Product created successfully:', result);
+
+      // Show success message before redirect
+      setError(''); // Clear errors
+      setTimeout(() => {
+        router.push('/admin/dashboard');
+      }, 500);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to add product. Please try again.';
+      console.error('Error creating product:', err);
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
